@@ -3,7 +3,9 @@
 #include<GL/glu.h>
 #include<GL/glut.h>
 #include <iostream>
+#include <math.h>
 
+const double PI = 3.14159265359;
 
 using namespace std;
 void displayCallback();
@@ -38,6 +40,7 @@ int offsetY = -10;
 float playerX = 1.45f;
 float playerY = 2.37f;
 double playerAngle = 45.0;
+double rays_t[] = {0}; // rays length, for simplicity lets cast 1 ray so the we don't fuck up
 
 const int worldMap[20][20] = {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
@@ -60,6 +63,8 @@ const int worldMap[20][20] = {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
                           {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}};
 
+void castRays();
+
 void keyboard(unsigned char key, int x, int y) {
     float deltaY = 0.0f;
     float deltaX = 0.0f;
@@ -78,9 +83,15 @@ void keyboard(unsigned char key, int x, int y) {
             deltaX= 0.1f;
             break;
         case 'j': //steering CCW
+            if (playerAngle + 1.f >= 360.0f) {
+                playerAngle = playerAngle - 360.f;
+            }
             playerAngle += 1.f;
             break;
         case 'k': //steering CW
+            if (playerAngle - 1.f < 0.0f) {
+                playerAngle = 360.0f - playerAngle;
+            }
             playerAngle -= 1.f;
             break;
     }
@@ -102,10 +113,11 @@ void keyboard(unsigned char key, int x, int y) {
                 }
             }
          }
-    cout << playerX << " " << playerY << "\n";
+    cout << playerX << " " << playerY << " " << playerAngle << "\n";
     playerX += deltaX;
     playerY += deltaY;
 }
+
 void drawGrid() {
     for (int i = -10; i <= 10; i++) {
         glBegin(GL_LINES);
@@ -147,6 +159,91 @@ void drawPlayer() {
     glEnd();
 }
 
+int isAtQuadrant(float deg) {
+    //check which quadrant doeas the ray in (ref to the ray origin)
+    if (deg >= 0.0f && deg < 90.0f) return 0;
+    if (deg >= 90.0f && deg < 180.0f) return 1;
+    if (deg >= 180.0f && deg < 270.0f) return 2;
+    if (deg >= 270.0f && deg < 360.0f) return 3;
+    else throw exception();
+}
+
+void castRays() {
+    
+    //DDA Raycaster naive implementation
+
+    // transform player from viewport to world coord
+    float pX = playerX - offsetX;
+    float pY = playerY - offsetY;
+    
+    // check quadrant of current player angle
+    int quadrant = isAtQuadrant(playerAngle);
+    float deg = playerAngle - (((float) quadrant)*90.0f);
+    float lx = 0;
+    float ly = 0;
+    float xlen = 0;
+    float ylen = 0;
+
+    float ax = floor(pX); // grid origin that player is currently in.
+    float ay = floor(pY);
+    float vx = 1.0f; // direction to step lx 
+    float vy = 1.0f; // direction to step ly
+    // cout << "quadrant " << quadrant << "\n";
+    switch(quadrant) {
+        case 0: xlen = 1.0f - (pX - ax);
+                ylen = (pY - ay); 
+                break;
+        case 1: xlen = (pX - ax);
+                ylen = (pY - ay); 
+                vx = -1.0f;
+                break;
+        case 2: xlen = (pX - ax);
+                ylen = 1.0f - (pY - ay); 
+                vx = -1.0f;
+                vy = -1.0f;
+                break;
+        case 3: xlen = 1.0f - (pX - ax);
+                ylen = 1.0f - (pY - ay); 
+                vy = -1.0f;
+                break;
+    }
+
+    int count = 0;
+    lx = xlen/cos((deg*PI)/180.f);
+    ly = ylen/sin((playerAngle*PI)/180.f);
+    cout <<"xlen, ylen "<< xlen << " " << ylen << "\n";
+    cout <<"cos, sin "<< cos((deg*PI)/180.f) << " " << sin((deg*PI)/180.f) << "\n";
+    while (count < 1) {
+        if (lx <= ly) {
+            xlen += 1;
+            lx = xlen/cos((deg*PI)/180.f);
+        }
+        else if (ly < lx) {
+            ylen += 1;
+            ly = ylen/sin((deg*PI)/180.f);
+        }
+        count++;
+    }
+
+    float maxL = max(lx , ly);
+
+    cout <<"xlen', ylen' "<< xlen << " " << ylen << "\n";
+    cout <<"LxLy"<< lx << " " << ly << "\n";
+
+    //draw ray
+    glLoadIdentity();
+    glTranslatef(playerX, playerY, 0.0f);
+    glRotatef(playerAngle, 0.0f, 0.0f, 1.0f);
+    glBegin(GL_LINES);
+    glVertex2f(0,0);
+    float uVecX = cos((deg*PI)/180.f);
+    float uVecY = sin((deg*PI)/180.f);
+    glVertex2f(maxL, 0);
+    glEnd();
+
+    
+}
+
 void displayCallback() {
     //clear frame buffer
     glClear(GL_COLOR_BUFFER_BIT);
@@ -154,6 +251,7 @@ void displayCallback() {
     drawGrid();
     drawMap();
     drawPlayer();
+    castRays();
     // reset model view matrix (rotation scale)
 
     glutSwapBuffers();
