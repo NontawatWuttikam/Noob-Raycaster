@@ -1,0 +1,17 @@
+# depslib dependency file v1.0
+1707489627 source:d:\»â·\cg\glut_tutorial\main.cpp
+	<windows.h>
+	<GL/gl.h>
+	<GL/glu.h>
+	<GL/glut.h>
+
+1421040624 d:\»â·\cg\phong\include\gl\gl.h
+
+1421040624 d:\»â·\cg\phong\include\gl\glu.h
+	<GL/gl.h>
+
+1421040624 d:\»â·\cg\phong\include\gl\glut.h
+	<windows.h>
+	<GL/gl.h>
+	<GL/glu.h>
+
