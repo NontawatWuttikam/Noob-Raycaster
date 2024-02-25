@@ -37,9 +37,9 @@ int main(int argc, char** argv) {
 
 int offsetX = -10;
 int offsetY = -10;
-float playerX = 1.45f;
-float playerY = 2.37f;
-double playerAngle = 45.0;
+float playerX = 1.0f;
+float playerY = 4.0f;
+double playerAngle = 220.0;
 double rays_t[] = {0}; // rays length, for simplicity lets cast 1 ray so the we don't fuck up
 const int worldSize = 20;
 const int worldMap[worldSize][worldSize] = {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
@@ -167,6 +167,42 @@ int isAtQuadrant(float deg) {
     else throw exception();
 }
 
+bool hitSomething(float pX, float pY) {
+    //TODO: add corner hit detection
+    // check wether current traced point of the ray at pX and pY hit something
+    
+    // not hit anything
+    cout << "rayX,rayY " << pX << " " << pY << "\n";
+
+    //iterate over maps 
+    for (int i = 0; i < worldSize; i++) {
+        for (int j = 0; j < worldSize; j++) {
+            if (worldMap[j][i] == 1) {
+                // construct facets of squared wall from ij
+                int facets[4][2][2] = {{{i,j}, {i+1, j}}, {{i,j}, {i, j+1}}, {{i+1,j}, {i+1, j+1}}, {{i,j+1}, {i+1, j+1}}};
+                for (int k = 0; k < 4; k++) {
+                    if (facets[k][0][0] == pX && pX - int(pX) == 0) {
+                        bool isHit = facets[k][0][1] <= pY && facets[k][1][1] >= pY;
+                        if (isHit) { 
+                            cout << "hitOnY " << i << " " << j << "\n";
+                            return true; 
+                        }
+                    }
+                    else if (facets[k][0][1] == pY && pY - int(pY) == 0) {
+                        bool isHit = facets[k][0][0] <= pX && facets[k][1][0] >= pX;
+                        if (isHit) { 
+                            cout << "hitOnX " << i << " " << j << "\n";
+                            return true; 
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return false;
+
+}
+
 void castRays() {
     
     //DDA Raycaster naive implementation
@@ -218,17 +254,38 @@ void castRays() {
     cout <<"deg"<< deg << "\n";
     cout <<"xlen, ylen "<< xlen << " " << ylen << "\n";
     cout <<"cos, sin "<< std::cos((deg*PI)/180.f) << " " << std::sin((deg*PI)/180.f) << "\n";
-    while (count < 4) {
-        if (lx <= ly) {
-            xlen += 1;
-            lx = xlen/cos((deg*PI)/180.f);
-        }
-        else if (ly < lx) {
-            ylen += 1;
-            ly = ylen/sin((deg*PI)/180.0);
-        }
-        count++;
+
+    
+    //check for lx,ly whether the rays hit something b4 incremental
+    float uPlayerRotVecX = std::cos((playerAngle*PI)/180.f);
+    float uPlayerRotVecY = -1*std::sin((playerAngle*PI)/180.f);
+    cout << "uPlayerRotVec " << uPlayerRotVecX << " " << uPlayerRotVecY << "\n";
+    cout << "playerPos " << pX << " " << pY << "\n";
+    cout << "initial LxLy " << lx << " " << ly << "\n";
+
+    bool hitOnLx = hitSomething(pX + (lx*uPlayerRotVecX), pY + (lx*uPlayerRotVecY));
+    bool hitOnLy = hitSomething(pX + (ly*uPlayerRotVecX), pY + (ly*uPlayerRotVecY));
+    if (hitOnLx || hitOnLy) {
+        cout << "hitOnLx or Ly" << "\n\n";
+        // return;
     }
+    else {
+        while (true) {
+            if (lx <= ly) {
+                xlen += 1;
+                lx = xlen/cos((deg*PI)/180.f);
+                bool hitOnLx = hitSomething(pX + (lx*uPlayerRotVecX), pY + (lx*uPlayerRotVecY));
+                if (hitOnLx) break;
+            }
+            else if (ly < lx) {
+                ylen += 1;
+                ly = ylen/sin((deg*PI)/180.0);
+                bool hitOnLy = hitSomething(pX + (ly*uPlayerRotVecX), pY + (ly*uPlayerRotVecY));
+                if (hitOnLy) break;
+            }
+        }
+    }
+
 
     double maxL = max(lx , ly);
 
