@@ -41,8 +41,8 @@ float playerX = 1.45f;
 float playerY = 2.37f;
 double playerAngle = 45.0;
 double rays_t[] = {0}; // rays length, for simplicity lets cast 1 ray so the we don't fuck up
-
-const int worldMap[20][20] = {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+const int worldSize = 20;
+const int worldMap[worldSize][worldSize] = {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
@@ -68,7 +68,6 @@ void castRays();
 void keyboard(unsigned char key, int x, int y) {
     float deltaY = 0.0f;
     float deltaX = 0.0f;
-
     switch(key) {
         case 'w':
             deltaY= 0.1f;
@@ -174,13 +173,14 @@ void castRays() {
 
     // transform player from viewport to world coord
     float pX = playerX - offsetX;
-    float pY = playerY - offsetY;
+    float pY = worldSize - (playerY - offsetY);
+    cout <<"pXpY"<< pX << " " << pY << "\n";
     
     // check quadrant of current player angle
     int quadrant = isAtQuadrant(playerAngle);
-    float deg = playerAngle - (((float) quadrant)*90.0f);
-    float lx = 0;
-    float ly = 0;
+    float deg = playerAngle;
+    double lx = 0;
+    double ly = 0;
     float xlen = 0;
     float ylen = 0;
 
@@ -193,16 +193,19 @@ void castRays() {
         case 0: xlen = 1.0f - (pX - ax);
                 ylen = (pY - ay); 
                 break;
-        case 1: xlen = (pX - ax);
+        case 1: deg = 180 - playerAngle;
+                xlen = (pX - ax);
                 ylen = (pY - ay); 
                 vx = -1.0f;
                 break;
-        case 2: xlen = (pX - ax);
+        case 2: deg = playerAngle - 180;
+                xlen = (pX - ax);
                 ylen = 1.0f - (pY - ay); 
                 vx = -1.0f;
                 vy = -1.0f;
                 break;
-        case 3: xlen = 1.0f - (pX - ax);
+        case 3: deg = 360 - playerAngle;
+                xlen = 1.0f - (pX - ax);
                 ylen = 1.0f - (pY - ay); 
                 vy = -1.0f;
                 break;
@@ -210,22 +213,24 @@ void castRays() {
 
     int count = 0;
     lx = xlen/cos((deg*PI)/180.f);
-    ly = ylen/sin((playerAngle*PI)/180.f);
+    ly = ylen/sin((deg*PI)/180.f);
+    cout <<"playerAngle"<< playerAngle << "\n";
+    cout <<"deg"<< deg << "\n";
     cout <<"xlen, ylen "<< xlen << " " << ylen << "\n";
-    cout <<"cos, sin "<< cos((deg*PI)/180.f) << " " << sin((deg*PI)/180.f) << "\n";
-    while (count < 1) {
+    cout <<"cos, sin "<< std::cos((deg*PI)/180.f) << " " << std::sin((deg*PI)/180.f) << "\n";
+    while (count < 4) {
         if (lx <= ly) {
             xlen += 1;
             lx = xlen/cos((deg*PI)/180.f);
         }
         else if (ly < lx) {
             ylen += 1;
-            ly = ylen/sin((deg*PI)/180.f);
+            ly = ylen/sin((deg*PI)/180.0);
         }
         count++;
     }
 
-    float maxL = max(lx , ly);
+    double maxL = max(lx , ly);
 
     cout <<"xlen', ylen' "<< xlen << " " << ylen << "\n";
     cout <<"LxLy"<< lx << " " << ly << "\n";
@@ -236,10 +241,12 @@ void castRays() {
     glRotatef(playerAngle, 0.0f, 0.0f, 1.0f);
     glBegin(GL_LINES);
     glVertex2f(0,0);
-    float uVecX = cos((deg*PI)/180.f);
-    float uVecY = sin((deg*PI)/180.f);
+    double uVecX = cos((deg*PI)/180.f);
+    double uVecY = sin((deg*PI)/180.f);
     glVertex2f(maxL, 0);
     glEnd();
+
+    cout << "\n";
 
     
 }
