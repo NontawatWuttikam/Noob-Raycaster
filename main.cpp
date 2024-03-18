@@ -5,6 +5,7 @@
 #include <iostream>
 #include <math.h>
 
+bool isPress = false;
 const double PI = 3.14159265359;
 
 using namespace std;
@@ -16,6 +17,18 @@ void keyboard(unsigned char, int, int);
 
 void init() {
     glClearColor(0.0, 0.0, 0.0, 1.0);
+}
+
+template<typename T, typename... Args>
+void print(T firstArg, Args... args) {
+    if (isPress) {
+        std::cout << firstArg; // Print the first argument
+
+        // Print the rest of the arguments space-separated
+        ((std::cout << ' ' << args), ...);
+        
+        std::cout << std::endl; // End the line
+    }
 }
 
 int main(int argc, char** argv) {
@@ -66,6 +79,7 @@ const int worldMap[worldSize][worldSize] = {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 void castRays();
 
 void keyboard(unsigned char key, int x, int y) {
+    isPress = true;
     float deltaY = 0.0f;
     float deltaX = 0.0f;
     switch(key) {
@@ -174,7 +188,8 @@ void castRays() {
     // transform player from viewport to world coord
     float pX = playerX - offsetX;
     float pY = worldSize - (playerY - offsetY);
-    cout <<"pXpY"<< pX << " " << pY << "\n";
+    // cout << << "\n";
+    print("pX,pY",pX,pY);
     
     // check quadrant of current player angle
     int quadrant = isAtQuadrant(playerAngle);
@@ -214,10 +229,12 @@ void castRays() {
     int count = 0;
     lx = xlen/cos((deg*PI)/180.f);
     ly = ylen/sin((deg*PI)/180.f);
-    cout <<"playerAngle"<< playerAngle << "\n";
-    cout <<"deg"<< deg << "\n";
-    cout <<"xlen, ylen "<< xlen << " " << ylen << "\n";
-    cout <<"cos, sin "<< std::cos((deg*PI)/180.f) << " " << std::sin((deg*PI)/180.f) << "\n";
+    print("AxAy",ax,ay);
+    print("playerAngle",playerAngle);
+    print("deg",deg);
+    print("xlen,ylen",xlen,ylen);
+    print("cos,sin ",std::cos((deg*PI)/180.f),std::sin((deg*PI)/180.f));
+
     while (count < 4) {
         if (lx <= ly) {
             xlen += 1;
@@ -232,8 +249,8 @@ void castRays() {
 
     double maxL = max(lx , ly);
 
-    cout <<"xlen', ylen' "<< xlen << " " << ylen << "\n";
-    cout <<"LxLy"<< lx << " " << ly << "\n";
+    print("xlen,ylen",xlen,ylen);
+    print("LxLy",lx,ly);
 
     //draw ray
     glLoadIdentity();
@@ -246,7 +263,7 @@ void castRays() {
     glVertex2f(maxL, 0);
     glEnd();
 
-    cout << "\n";
+    print("\n");
 
     
 }
@@ -262,6 +279,7 @@ void displayCallback() {
     // reset model view matrix (rotation scale)
 
     glutSwapBuffers();
+    isPress = false;
     //flush (finish draw)
     // glFlush();
 }
