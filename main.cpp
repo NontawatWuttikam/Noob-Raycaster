@@ -205,22 +205,22 @@ void castRays() {
     float vy = 1.0f; // direction to step ly
     // cout << "quadrant " << quadrant << "\n";
     switch(quadrant) {
-        case 0: xlen = 1.0f - (pX - ax);
+        case 0: xlen = pX - ax;
                 ylen = (pY - ay); 
                 break;
         case 1: deg = 180 - playerAngle;
-                xlen = (pX - ax);
+                xlen = 1.0f - (pX - ax);
                 ylen = (pY - ay); 
                 vx = -1.0f;
                 break;
         case 2: deg = playerAngle - 180;
-                xlen = (pX - ax);
+                xlen = 1.0f - (pX - ax);
                 ylen = 1.0f - (pY - ay); 
                 vx = -1.0f;
                 vy = -1.0f;
                 break;
         case 3: deg = 360 - playerAngle;
-                xlen = 1.0f - (pX - ax);
+                xlen = pX - ax;
                 ylen = 1.0f - (pY - ay); 
                 vy = -1.0f;
                 break;
