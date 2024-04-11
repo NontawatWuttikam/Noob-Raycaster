@@ -65,7 +65,8 @@ int main(int argc, char** argv) {
     glutMainLoop();
 }
 
-const int numRays = 30;
+//2d space
+const int numRays = 40;
 const int fov = 60.0f;
 const int offsetX = -20;
 const int offsetY = -10;
@@ -77,22 +78,24 @@ float playerAngle = 45.0f;
 double rays_t[(int) numRays]; // rays length, for simplicity lets cast 1 ray so the we don't fuck up
 const int worldSize = 20;
 
+//viewport
+const float wallHeight = 18.0f; //canonical max = 20
 const int worldMap[worldSize][worldSize] = {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
                           {1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1},
-                          {1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1},
+                          {1,0,0,0,0,0,1,1,1,1,0,0,0,0,1,0,0,0,0,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1},
                           {1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
                           {1,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-                          {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-                          {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-                          {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1},
-                          {1,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,1},
+                          {1,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,1},
+                          {1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1},
+                          {1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,1},
+                          {1,0,0,0,1,1,0,0,1,1,1,0,1,1,1,1,1,0,0,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
@@ -424,6 +427,26 @@ void castRays() {
     }    
 }
 
+void renderViewport() {
+    glLoadIdentity();
+    // iterate over ray lengths buffer and draw a vertical rectangle (line)
+    for (int i = 0; i < numRays; i++) {
+        float height = wallHeight/rays_t[i];
+        float xStep = (i/(float)numRays)*20; //20 is viewport length in x axis(half of total canonical = 40)
+        float xStepPlus1 = ((i+1)/(float)numRays)*20;
+        float colorIntensity = height/wallHeight;
+        float voidGap = (20 - height)/2.0f; // empty gap between thhe vertical line
+        glBegin(GL_POLYGON);
+        glColor3f(colorIntensity, colorIntensity, colorIntensity);
+        // std::cout << j+offsetX << " " << -1*i+offsetY << "\n";
+        glVertex2f(xStep, voidGap + offsetY);
+        glVertex2f(xStep, height + voidGap + offsetY);
+        glVertex2f(xStepPlus1, height + voidGap + offsetY);
+        glVertex2f(xStepPlus1, voidGap + offsetY);
+        glEnd();
+    }
+}
+
 void displayCallback() {
     //clear frame buffer
     glClear(GL_COLOR_BUFFER_BIT);
@@ -432,6 +455,7 @@ void displayCallback() {
     drawMap();
     drawPlayer();
     castRays();
+    renderViewport();
     // reset model view matrix (rotation scale)
 
     glutSwapBuffers();
