@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
 }
 
 //2d space
-const int numRays = 40;
+const int numRays = 60;
 const int fov = 60.0f;
 const int offsetX = -20;
 const int offsetY = -10;
@@ -75,6 +75,7 @@ const int ViewportOffsetY = -10;
 float playerX = -3.0f; //canonical space!
 float playerY = -1.0f; // canonical space!
 float playerAngle = 45.0f;
+const float walkSize = 0.03f;
 double rays_t[(int) numRays]; // rays length, for simplicity lets cast 1 ray so the we don't fuck up
 const int worldSize = 20;
 
@@ -109,16 +110,16 @@ void keyboard(unsigned char key, int x, int y) {
     float deltaX = 0.0f;
     switch(key) {
         case 'w':
-            deltaY= 0.1f;
+            deltaY= walkSize;
             break;
         case 'a':
-            deltaX= -0.1f;
+            deltaX= -walkSize;
             break;
         case 's':
-            deltaY= -0.1f;
+            deltaY= -walkSize;
             break;
         case 'd':
-            deltaX= 0.1f;
+            deltaX= walkSize;
             break;
         case 'j': //steering CCW
             if (playerAngle + 1.f >= 360.0f) {
@@ -402,7 +403,9 @@ void castRays() {
         print("finalL",finalL);
 
         // update ray
-        rays_t[r] = finalL;
+        // to prevent fisheye distortion, multiply ray length with cos(angle)
+        float angleFromCameraZ = std::cos((fabs(playerAngle - current_angle)*PI)/180.0f);
+        rays_t[r] = finalL*angleFromCameraZ;
 
         //draw ray
         glLoadIdentity();
