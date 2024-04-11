@@ -65,15 +65,16 @@ int main(int argc, char** argv) {
     glutMainLoop();
 }
 
-int numRays = 30;
-int fov = 60.0f;
-int offsetX = -10;
-int offsetY = -10;
+const int numRays = 30;
+const int fov = 60.0f;
+const int offsetX = -10;
+const int offsetY = -10;
 float playerX = 1.45f;
 float playerY = 2.37f;
 float playerAngle = 45.0f;
-double rays_t[] = {0}; // rays length, for simplicity lets cast 1 ray so the we don't fuck up
+double rays_t[(int) numRays]; // rays length, for simplicity lets cast 1 ray so the we don't fuck up
 const int worldSize = 20;
+
 const int worldMap[worldSize][worldSize] = {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
@@ -277,6 +278,8 @@ void castRays() {
 
     // step size for angle
     float step_size = fov/((float) numRays);
+    // ray index
+    int r = 0;
 
     print_("player,start,end angle", playerAngle, start_angle, end_angle);
     while(fabs(current_angle - end_angle) > EPS) {
@@ -393,6 +396,8 @@ void castRays() {
         print("finalLxLy",finalLx, finalLy);
         print("finalL",finalL);
 
+        // update ray
+        rays_t[r] = finalL;
 
         //draw ray
         glLoadIdentity();
@@ -412,8 +417,8 @@ void castRays() {
         current_angle += step_size;
         if (current_angle >= 360.0f) {
             current_angle = current_angle - 360.0f;
-            print_("do");
         }
+        r++;
     }    
 }
 
