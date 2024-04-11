@@ -67,10 +67,12 @@ int main(int argc, char** argv) {
 
 const int numRays = 30;
 const int fov = 60.0f;
-const int offsetX = -10;
+const int offsetX = -20;
 const int offsetY = -10;
-float playerX = 1.45f;
-float playerY = 2.37f;
+const int ViewportOffsetX = 0;
+const int ViewportOffsetY = -10;
+float playerX = -3.0f; //canonical space!
+float playerY = -1.0f; // canonical space!
 float playerAngle = 45.0f;
 double rays_t[(int) numRays]; // rays length, for simplicity lets cast 1 ray so the we don't fuck up
 const int worldSize = 20;
@@ -152,20 +154,20 @@ void keyboard(unsigned char key, int x, int y) {
 }
 
 void drawGrid() {
-    for (int i = -10; i <= 10; i++) {
+    for (int i = -20; i <= 0; i++) {
         glBegin(GL_LINES);
         glColor3f(1.0, 1.0, 1.0);
         glVertex2f(i, -10);
         glVertex2f(i, 10);
-        glVertex2f(-10, i);
-        glVertex2f(10, i);
+        glVertex2f(-20, i+10);
+        glVertex2f(0, i+10);
         glEnd();
     }
 }
 
 void drawPoint(float x, float y, float r, float g, float b) {
     glLoadIdentity();
-    glPointSize(10.0);
+    glPointSize(8.0);
     glBegin(GL_POINTS);
     glColor3f(r,g,b);
     glVertex2f(x,y);
@@ -194,11 +196,11 @@ void drawMap() {
 void drawPlayer() {
     glTranslatef(playerX, playerY, 0.0f);
     glRotatef(playerAngle, 0.0f, 0.0f, 1.0f);
-    // glBegin(GL_POLYGON);
-    // glColor3f(1.0, 0.0, 0.0);
-    // glVertex2f(0.5, 0);
-    // glVertex2f(-0.5, 0.3);
-    // glVertex2f(-0.5, -0.3);
+    glBegin(GL_POLYGON);
+    glColor3f(1.0, 0.0, 0.0);
+    glVertex2f(0.5, 0);
+    glVertex2f(-0.5, 0.3);
+    glVertex2f(-0.5, -0.3);
     glEnd();
 }
 
@@ -339,7 +341,7 @@ void castRays() {
         float finalLy = F_INF; // set final ray length to inf
         bool isLxHit = false; // flag to check if rayLx is hit something
         bool isLyHit = false; // flag to check if rayLy is hit something
-        int maxStep = worldSize*2; //maximum step to prvent forever ray cast (edge case, bugs)
+        int maxStep = worldSize*4; //maximum step to prvent forever ray cast (edge case, bugs)
         int count = 0;
 
         while (true) { // tip of the ray is in wall
@@ -404,7 +406,7 @@ void castRays() {
         glTranslatef(playerX, playerY, 0.0f);
         glRotatef(current_angle, 0.0f, 0.0f, 1.0f);
         glBegin(GL_LINES);
-        glColor3f(1.0, 1.0, 0.0);
+        glColor3f(0.0, 0.0, 1.0);
         glVertex2f(0,0);
         double uVecX = cos((deg*PI)/180.f);
         double uVecY = sin((deg*PI)/180.f);
@@ -448,7 +450,7 @@ void reshape(int w, int h) {
     glLoadIdentity();
 
     //set projection mode to orthographic 2d
-    gluOrtho2D(-10, 10, -10, 10);
+    gluOrtho2D(-20, 20, -10, 10);
 
     //change matrix mode back
     glMatrixMode(GL_MODELVIEW);
