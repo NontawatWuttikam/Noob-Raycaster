@@ -68,14 +68,14 @@ int main(int argc, char** argv) {
     glutTimerFunc(0, timer, 0);
     glutKeyboardFunc(keyboard);
 
-    const char* filename = "test_textures.bmp";
+    const char* filename = "wood.bmp";
     loadTexture(filename);
     init();
     glutMainLoop();
 }
 
 //2d space
-const int numRays = 30;
+const int numRays = 80;
 const int fov = 60.0f;
 const int offsetX = -20;
 const int offsetY = -10;
@@ -420,7 +420,6 @@ void castRays() {
         float angleFromCameraZ = std::cos((fabs(playerAngle - current_angle)*PI)/180.0f);
         rays_t[r] = finalL*angleFromCameraZ;
         float* endOfRay = findEndOfRay(pX, pY, finalL, current_angle);
-        print_("eor",endOfRay[0],endOfRay[1]);
         float hitAt = (fabs(endOfRay[0] - floor(endOfRay[0])) < EPS)? endOfRay[1] : endOfRay[0];
         rays_hit[r] = hitAt;
 
@@ -436,7 +435,6 @@ void castRays() {
         glVertex2f(finalL, 0);
         glColor3f(1.0, 1.0, 1.0);
         glEnd();
-        print("\n");
 
         // step angle
         current_angle += step_size;
@@ -451,38 +449,26 @@ void renderViewport() {
     glLoadIdentity();
     // iterate over ray lengths buffer and draw a vertical rectangle (line)
     for (int i = 0; i < numRays; i++) {
-        print_("rays_hit", rays_hit[i]);
+        // print_("rays_hit", rays_hit[i]);
         float height = wallHeight/rays_t[i];
         float xStep = (i/(float)numRays)*20; //20 is viewport length in x axis(half of total canonical = 40)
         float xStepPlus1 = ((i+1)/(float)numRays)*20;
         float colorIntensity = std::pow((height/wallHeight),0.75);
         float voidGap = (20 - height)/2.0f; // empty gap between thhe vertical line
 
-        //drawing
-        // if (i < numRays - 1) {
-        //     if rays_hit[i]
-        // }
-        float floori = floor(rays_hit[i]);
-        float floorip1 = floor(rays_hit[i+1]);
-        float x1,x2;
-        if (fabs(floori - floorip1) < EPS) {
-            x1 = rays_hit[i] - floori;
-            x2 = rays_hit[i+1] - floorip1;
-            // print_("x1x2",x1,x2);
-        }
         glBindTexture(GL_TEXTURE_2D, textureID);
         glEnable(GL_TEXTURE_2D);
         glBegin(GL_POLYGON);
         // glColor3f(colorIntensity, colorIntensity, colorIntensity);
         // std::cout << j+offsetX << " " << -1*i+offsetY << "\n";
         glVertex2f(xStep, voidGap + offsetY);
-        glTexCoord2f(x1, 0.0f);
+        glTexCoord2f(rays_hit[i] - floor(rays_hit[i]), 0.0f);
         glVertex2f(xStep, height + voidGap + offsetY);
-        glTexCoord2f(x2, 0.0f);
+        glTexCoord2f(rays_hit[i] - floor(rays_hit[i]), 0.0f);
         glVertex2f(xStepPlus1, height + voidGap + offsetY);
-        glTexCoord2f(x2, 1.0f);
+        glTexCoord2f(rays_hit[i] - floor(rays_hit[i]), 1.0f);
         glVertex2f(xStepPlus1, voidGap + offsetY);
-        glTexCoord2f(x1, 1.0f);
+        glTexCoord2f(rays_hit[i] - floor(rays_hit[i]), 1.0f);
         glEnd();
 
         glDisable(GL_TEXTURE_2D);
@@ -505,10 +491,8 @@ GLuint loadBMP(const char* filename)
     glGenTextures(1, &textureID);
     glBindTexture(GL_TEXTURE_2D, textureID);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image_data);
 
