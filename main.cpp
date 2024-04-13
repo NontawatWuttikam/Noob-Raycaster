@@ -1,9 +1,15 @@
+#define STB_IMAGE_IMPLEMENTATION
 #include<windows.h>
 #include<GL/gl.h>
 #include<GL/glu.h>
 #include<GL/glut.h>
 #include <iostream>
 #include <math.h>
+#include <fstream>
+#include <vector>
+#include "stb/stb_image.h"
+
+#define GL_CLAMP_TO_EDGE 0x812F
 
 bool isPress = false;
 bool isDebug = false;
@@ -17,11 +23,11 @@ void reshape(int, int);
 void timer(int);
 void drawGrid();
 void keyboard(unsigned char, int, int);
+void loadTexture(const char*);
 
 void init() {
     glClearColor(0.0, 0.0, 0.0, 1.0);
 }
-
 
 template<typename T, typename... Args>
 void print(T firstArg, Args... args) {
@@ -61,12 +67,15 @@ int main(int argc, char** argv) {
     glutReshapeFunc(reshape);
     glutTimerFunc(0, timer, 0);
     glutKeyboardFunc(keyboard);
+
+    const char* filename = "test_textures.bmp";
+    loadTexture(filename);
     init();
     glutMainLoop();
 }
 
 //2d space
-const int numRays = 60;
+const int numRays = 3;
 const int fov = 60.0f;
 const int offsetX = -20;
 const int offsetY = -10;
@@ -101,6 +110,8 @@ const int worldMap[worldSize][worldSize] = {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
                           {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}};
+
+GLuint textureID; // Texture ID for the loaded image
 
 void castRays();
 
@@ -439,14 +450,58 @@ void renderViewport() {
         float xStepPlus1 = ((i+1)/(float)numRays)*20;
         float colorIntensity = std::pow((height/wallHeight),0.75);
         float voidGap = (20 - height)/2.0f; // empty gap between thhe vertical line
-        glBegin(GL_POLYGON);
-        glColor3f(colorIntensity, colorIntensity, colorIntensity);
+
+        //drawing
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glEnable(GL_TEXTURE_2D);
+        glBegin(GL_QUADS);
+        // glColor3f(colorIntensity, colorIntensity, colorIntensity);
         // std::cout << j+offsetX << " " << -1*i+offsetY << "\n";
         glVertex2f(xStep, voidGap + offsetY);
+        glTexCoord2f(0.0f, 0.0f);
         glVertex2f(xStep, height + voidGap + offsetY);
+        glTexCoord2f(0.0f, 1.0f);
         glVertex2f(xStepPlus1, height + voidGap + offsetY);
+        glTexCoord2f(1.0f, 1.0f);
         glVertex2f(xStepPlus1, voidGap + offsetY);
+        glTexCoord2f(1.0f, 0.0f);
         glEnd();
+
+        glDisable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+    }
+}
+
+GLuint loadBMP(const char* filename)
+{
+    int width, height, channels;
+    unsigned char *image_data = stbi_load(filename, &width, &height, &channels, STBI_rgb);
+
+    if (image_data == NULL) {
+        printf("Failed to load texture\n");
+        return 1;
+    }
+
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image_data);
+
+    return textureID;
+}
+
+void loadTexture(const char* filename) {
+    textureID = loadBMP(filename);
+    if (textureID == 0) {
+        print_("Error loading texture: ",&filename);
     }
 }
 
