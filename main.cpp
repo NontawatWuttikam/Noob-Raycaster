@@ -75,17 +75,18 @@ int main(int argc, char** argv) {
 }
 
 //2d space
-const int numRays = 3;
+const int numRays = 30;
 const int fov = 60.0f;
 const int offsetX = -20;
 const int offsetY = -10;
 const int ViewportOffsetX = 0;
 const int ViewportOffsetY = -10;
-float playerX = -3.0f; //canonical space!
-float playerY = -1.0f; // canonical space!
-float playerAngle = 45.0f;
+float playerX = -7.92003f; //canonical space!
+float playerY = -0.29f; // canonical space!
+float playerAngle = 91.0f;
 const float walkSize = 0.03f;
 double rays_t[(int) numRays]; // rays length, for simplicity lets cast 1 ray so the we don't fuck up
+double rays_hit[(int) numRays];
 const int worldSize = 20;
 
 //viewport
@@ -157,8 +158,8 @@ void keyboard(unsigned char key, int x, int y) {
                 float maxY = (-1*(i+offsetY)) ;
                 // player + delta is in some wall block: so we dont walk
                 if ((playerX+deltaX > minX && playerX+deltaX < maxX) && (playerY+deltaY > minY && playerY+deltaY < maxY)) {
-                    cout << playerX << " " << playerY << "\n";
-                    cout << "stuck: " << minX << " " << minY << " " << maxX << " " << maxY << " " << "\n";
+                    // cout << playerX << " " << playerY << "\n";
+                    // cout << "stuck: " << minX << " " << minY << " " << maxX << " " << maxY << " " << "\n";
                     return;
                 }
             }
@@ -243,7 +244,7 @@ bool hitSomething(float pX, float pY) {
     //TODO: add corner hit detection
     // check wether current traced point of the ray at pX and pY hit something
     
-    // not hit anything
+    // hitAt : fractional part of pX OR pY (depends on what hit first) for texture mapping
 
     //iterate over maps 
     for (int i = 0; i < worldSize; i++) {
@@ -298,7 +299,7 @@ void castRays() {
     // ray index
     int r = 0;
 
-    print_("player,start,end angle", playerAngle, start_angle, end_angle);
+    // print_("player,start,end angle", playerAngle, start_angle, end_angle);
     while(fabs(current_angle - end_angle) > EPS) {
         // transform player from viewport to world coord
         float pX = playerX - offsetX;
@@ -358,6 +359,7 @@ void castRays() {
         bool isLyHit = false; // flag to check if rayLy is hit something
         int maxStep = worldSize*4; //maximum step to prvent forever ray cast (edge case, bugs)
         int count = 0;
+        
 
         while (true) { // tip of the ray is in wall
             if (hitSomething(endOfRaysLx[0], endOfRaysLx[1]) && !isLxHit) {finalLx = lx; isLxHit = true; print(">Red Hit at", endOfRaysLx[0], endOfRaysLx[1]);} // check if RayLx hit any facet of the wall
@@ -417,6 +419,10 @@ void castRays() {
         // to prevent fisheye distortion, multiply ray length with cos(angle)
         float angleFromCameraZ = std::cos((fabs(playerAngle - current_angle)*PI)/180.0f);
         rays_t[r] = finalL*angleFromCameraZ;
+        float* endOfRay = findEndOfRay(pX, pY, finalL, current_angle);
+        print_("eor",endOfRay[0],endOfRay[1]);
+        float hitAt = (fabs(endOfRay[0] - floor(endOfRay[0])) < EPS)? endOfRay[1] : endOfRay[0];
+        rays_hit[r] = hitAt;
 
         //draw ray
         glLoadIdentity();
@@ -445,6 +451,7 @@ void renderViewport() {
     glLoadIdentity();
     // iterate over ray lengths buffer and draw a vertical rectangle (line)
     for (int i = 0; i < numRays; i++) {
+        print_("rays_hit", rays_hit[i]);
         float height = wallHeight/rays_t[i];
         float xStep = (i/(float)numRays)*20; //20 is viewport length in x axis(half of total canonical = 40)
         float xStepPlus1 = ((i+1)/(float)numRays)*20;
@@ -452,26 +459,36 @@ void renderViewport() {
         float voidGap = (20 - height)/2.0f; // empty gap between thhe vertical line
 
         //drawing
-
+        // if (i < numRays - 1) {
+        //     if rays_hit[i]
+        // }
+        float floori = floor(rays_hit[i]);
+        float floorip1 = floor(rays_hit[i+1]);
+        float x1,x2;
+        if (fabs(floori - floorip1) < EPS) {
+            x1 = rays_hit[i] - floori;
+            x2 = rays_hit[i+1] - floorip1;
+            // print_("x1x2",x1,x2);
+        }
         glBindTexture(GL_TEXTURE_2D, textureID);
         glEnable(GL_TEXTURE_2D);
-        glBegin(GL_QUADS);
+        glBegin(GL_POLYGON);
         // glColor3f(colorIntensity, colorIntensity, colorIntensity);
         // std::cout << j+offsetX << " " << -1*i+offsetY << "\n";
         glVertex2f(xStep, voidGap + offsetY);
-        glTexCoord2f(0.0f, 0.0f);
+        glTexCoord2f(x1, 0.0f);
         glVertex2f(xStep, height + voidGap + offsetY);
-        glTexCoord2f(0.0f, 1.0f);
+        glTexCoord2f(x2, 0.0f);
         glVertex2f(xStepPlus1, height + voidGap + offsetY);
-        glTexCoord2f(1.0f, 1.0f);
+        glTexCoord2f(x2, 1.0f);
         glVertex2f(xStepPlus1, voidGap + offsetY);
-        glTexCoord2f(1.0f, 0.0f);
+        glTexCoord2f(x1, 1.0f);
         glEnd();
 
         glDisable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, 0);
 
     }
+    print_("\n");
 }
 
 GLuint loadBMP(const char* filename)
