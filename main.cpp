@@ -11,23 +11,13 @@
 
 #define GL_CLAMP_TO_EDGE 0x812F
 
+// system
 bool isPress = false;
 bool isDebug = false;
 const double PI = 3.14159265359;
 float EPS = 0.00005;
 float F_INF = 1e+18;
-
-using namespace std;
-void displayCallback();
-void reshape(int, int);
-void timer(int);
-void drawGrid();
-void keyboard(unsigned char, int, int);
-void loadTexture(const char*);
-
-void init() {
-    glClearColor(0.0, 0.0, 0.0, 1.0);
-}
+GLuint textureID; // Texture ID for the loaded image
 
 template<typename T, typename... Args>
 void print(T firstArg, Args... args) {
@@ -54,6 +44,19 @@ void print_(T firstArg, Args... args) {
     }
 }
 
+using namespace std;
+void displayCallback();
+void reshape(int, int);
+void timer(int);
+void drawGrid();
+void keyboard(unsigned char, int, int);
+void loadTexture(const char*);
+void castRays();
+
+void init() {
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+}
+
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
@@ -74,23 +77,31 @@ int main(int argc, char** argv) {
     glutMainLoop();
 }
 
-//2d space
+//fixed parameters
 const int numRays = 80;
 const int fov = 60.0f;
 const int offsetX = -20;
 const int offsetY = -10;
 const int ViewportOffsetX = 0;
 const int ViewportOffsetY = -10;
+const float walkSize = 0.03f;
+
+//user parameters
 float playerX = -7.92003f; //canonical space!
 float playerY = -0.29f; // canonical space!
 float playerAngle = 91.0f;
-const float walkSize = 0.03f;
 double rays_t[(int) numRays]; // rays length, for simplicity lets cast 1 ray so the we don't fuck up
 double rays_hit[(int) numRays];
 const int worldSize = 20;
+const float wallHeight = 18.0f; //canonical max = 20
+const float skyR = 150/255.0f;
+const float skyG = 135/255.0f;
+const float skyB = 56/255.0f;
+const float floorR = 135/255.0f;
+const float floorG = 206/255.0f;
+const float floorB = 235/255.0f;
 
 //viewport
-const float wallHeight = 18.0f; //canonical max = 20
 const int worldMap[worldSize][worldSize] = {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
@@ -111,10 +122,6 @@ const int worldMap[worldSize][worldSize] = {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
                           {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}};
-
-GLuint textureID; // Texture ID for the loaded image
-
-void castRays();
 
 void keyboard(unsigned char key, int x, int y) {
     isPress = true;
@@ -170,7 +177,7 @@ void keyboard(unsigned char key, int x, int y) {
 }
 
 void drawGrid() {
-    for (int i = -20; i <= 0; i++) {
+    for (int i = -20; i < 0; i++) {
         glBegin(GL_LINES);
         glColor3f(1.0, 1.0, 1.0);
         glVertex2f(i, -10);
@@ -182,13 +189,13 @@ void drawGrid() {
 }
 
 void drawPoint(float x, float y, float r, float g, float b) {
-    // glLoadIdentity();
-    // glPointSize(8.0);
-    // glBegin(GL_POINTS);
-    // glColor3f(r,g,b);
-    // glVertex2f(x,y);
-    // glColor3f(1.0, 1.0, 1.0);
-    // glEnd();
+    glLoadIdentity();
+    glPointSize(8.0);
+    glBegin(GL_POINTS);
+    glColor3f(r,g,b);
+    glVertex2f(x,y);
+    glColor3f(1.0, 1.0, 1.0);
+    glEnd();
 }
 
 void drawMap() {
@@ -384,8 +391,8 @@ void castRays() {
             print("Green",count,endOfRaysLy[0],endOfRaysLy[1]);
             
             // draw a point on a grid line in both x and y axis which a ray at any step stop at.
-            drawPoint(endOfRaysLx[0] + offsetX, -1*(endOfRaysLx[1] + offsetY), 1.0, 0.0, 0.0);
-            drawPoint(endOfRaysLy[0] + offsetX, -1*(endOfRaysLy[1] + offsetY), 0.0, 1.0, 0.0);
+            // drawPoint(endOfRaysLx[0] + offsetX, -1*(endOfRaysLx[1] + offsetY), 1.0, 0.0, 0.0);
+            // drawPoint(endOfRaysLy[0] + offsetX, -1*(endOfRaysLy[1] + offsetY), 0.0, 1.0, 0.0);
 
             // check if the endOfRayLx is outside the map, we won't step further
             if (endOfRaysLx[0] < 0 || endOfRaysLx[0] > worldSize || endOfRaysLx[1] < 0 || endOfRaysLx[1] > worldSize) { // both endofrayLx and endofrayLy are out of bound
@@ -533,9 +540,8 @@ void displayCallback() {
     drawMap();
     drawPlayer();
     castRays();
-    renderFloorAndSky(150/255.0f, 135/255.0f, 56/255.0f, 135/255.0f, 206/255.0f, 235/255.0f);
+    renderFloorAndSky(skyR, skyB, skyG, floorR, floorG, floorB);
     render3DWall();
-    // reset model view matrix (rotation scale)
 
     glutSwapBuffers();
     isPress = false;
