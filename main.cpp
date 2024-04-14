@@ -8,6 +8,8 @@
 #include <fstream>
 #include <vector>
 #include "stb/stb_image.h"
+#include <string.h>
+#include <sstream>
 
 #define GL_CLAMP_TO_EDGE 0x812F
 
@@ -18,6 +20,7 @@ const double PI = 3.14159265359;
 float EPS = 0.00005;
 float F_INF = 1e+18;
 GLuint textureID; // Texture ID for the loaded image
+std::string textureFilename;
 
 template<typename T, typename... Args>
 void print(T firstArg, Args... args) {
@@ -44,6 +47,16 @@ void print_(T firstArg, Args... args) {
     }
 }
 
+template<typename T, typename... Args>
+void printforce(T firstArg, Args... args) {
+        std::cout << firstArg; // Print the first argument
+
+        // Print the rest of the arguments space-separated
+        ((std::cout << ' ' << args), ...);
+        
+        std::cout << std::endl; // End the line
+}
+
 using namespace std;
 void displayCallback();
 void reshape(int, int);
@@ -52,12 +65,17 @@ void drawGrid();
 void keyboard(unsigned char, int, int);
 void loadTexture(const char*);
 void castRays();
+void parseWorldParameters(ifstream&);
+void parseOtherParameters(ifstream&);  
 
 void init() {
     glClearColor(0.0, 0.0, 0.0, 1.0);
 }
 
 int main(int argc, char** argv) {
+    std::ifstream file("example_config\\woodMaze.txt");
+    parseWorldParameters(file);
+    parseOtherParameters(file);
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
 
@@ -71,8 +89,8 @@ int main(int argc, char** argv) {
     glutTimerFunc(0, timer, 0);
     glutKeyboardFunc(keyboard);
 
-    const char* filename = "doom_brick.jpg";
-    loadTexture(filename);
+    // char* filename = "wood.bmp";
+    loadTexture(textureFilename.c_str());
     init();
     glutMainLoop();
 }
@@ -90,19 +108,20 @@ const float walkSize = 0.03f;
 float playerX = -7.92003f; //canonical space!
 float playerY = -0.29f; // canonical space!
 float playerAngle = 91.0f;
+float distanceFallOff = 0.01; // brightness falloff
 double rays_t[(int) numRays]; // rays length, for simplicity lets cast 1 ray so the we don't fuck up
 double rays_hit[(int) numRays];
 const int worldSize = 20;
-const float wallHeight = 18.0f; //canonical max = 20
-const float skyR = 150/255.0f;
-const float skyG = 135/255.0f;
-const float skyB = 56/255.0f;
-const float floorR = 135/255.0f;
-const float floorG = 206/255.0f;
-const float floorB = 235/255.0f;
+float wallHeight = 18.0f; //canonical max = 20
+float skyR = 150/255.0f;
+float skyG = 135/255.0f;
+float skyB = 56/255.0f;
+float floorR = 135/255.0f;
+float floorG = 206/255.0f;
+float floorB = 235/255.0f;
 
 //viewport
-const int worldMap[worldSize][worldSize] = {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+int worldMap[worldSize][worldSize] = {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
                           {1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1},
@@ -122,6 +141,68 @@ const int worldMap[worldSize][worldSize] = {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,1},
                           {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
                           {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}};
+
+//parsing
+void parseWorldParameters(ifstream& file) {
+    string line;
+    int countRow = 0;
+    while (getline(file, line)) {
+        if (line == "[world]") {
+            while (getline(file, line) && line != "") {
+                int countCol = 0;
+                for (int i = 0; i < line.length(); i++) {
+                    if (i % 2 == 0) {
+                        if (line[i] == '1') worldMap[countRow][countCol] = 1;
+                        if (line[i] == '0') worldMap[countRow][countCol] = 0;
+                        if (line[i] == 'P') {
+                            worldMap[countRow][countCol] = 0; 
+                            playerX = countCol + offsetX + 0.5f;
+                            playerY = -1*(countRow+offsetY) + 0.5f;
+
+                        }
+                        countCol++;
+                    }
+                }
+                countRow++;
+            }
+            break;
+        }
+    }
+}
+
+void parseOtherParameters(ifstream& file) {
+    string line;
+    while (getline(file, line)) {
+        printforce("loading parameters...");
+        if (line == "[OtherParameters]") {
+            while (getline(file, line) && line != "") {
+                int countCol = 0;
+                printforce(">>", line);
+                std::istringstream iss(line);
+
+                std::vector<std::string> tokens;
+
+                std::string token;
+                while (std::getline(iss, token, ' ')) {
+                    tokens.push_back(token);
+                }
+
+                if (tokens[0] == "skyR") skyR = std::stof(tokens[1])/255.0f; 
+                if (tokens[0] == "skyG") skyG = std::stof(tokens[1])/255.0f; 
+                if (tokens[0] == "skyB") skyB = std::stof(tokens[1])/255.0f; 
+                if (tokens[0] == "floorR") floorR = std::stof(tokens[1])/255.0f; 
+                if (tokens[0] == "floorG") floorG = std::stof(tokens[1])/255.0f; 
+                if (tokens[0] == "floorB") floorB = std::stof(tokens[1])/255.0f; 
+                if (tokens[0] == "distanceFallOff") distanceFallOff = std::stof(tokens[1]);
+                if (tokens[0] == "texture") {
+                    textureFilename = tokens[1];
+                }
+
+            }
+            break;
+        }
+    }
+}
 
 void keyboard(unsigned char key, int x, int y) {
     isPress = true;
@@ -304,7 +385,7 @@ void castRays() {
     // step size for angle
     float step_size = fov/((float) numRays);
     // ray index
-    int r = 0;
+    int r = numRays - 1;
 
     // print_("player,start,end angle", playerAngle, start_angle, end_angle);
     while(fabs(current_angle - end_angle) > EPS) {
@@ -448,7 +529,7 @@ void castRays() {
         if (current_angle >= 360.0f) {
             current_angle = current_angle - 360.0f;
         }
-        r++;
+        r--;
     }    
 }
 
@@ -478,14 +559,14 @@ void render3DWall() {
         float height = wallHeight/rays_t[i];
         float xStep = (i/(float)numRays)*20; //20 is viewport length in x axis(half of total canonical = 40)
         float xStepPlus1 = ((i+1)/(float)numRays)*20;
-        float colorIntensity = std::pow((height/wallHeight),0.75);
+        float colorIntensity = std::pow((height/wallHeight),distanceFallOff); // fall off in depth
         float voidGap = (20 - height)/2.0f; // empty gap between thhe vertical line
 
         glBindTexture(GL_TEXTURE_2D, textureID);
         glEnable(GL_TEXTURE_2D);
         glBegin(GL_POLYGON);
-        // glColor3f(colorIntensity, colorIntensity, colorIntensity);
-        glColor3f(1.0f, 1.0f, 1.0f);
+        glColor3f(colorIntensity, colorIntensity, colorIntensity);
+        // glColor3f(1.0f, 1.0f, 1.0f);
         // std::cout << j+offsetX << " " << -1*i+offsetY << "\n";
         glVertex2f(xStep, voidGap + offsetY);
         glTexCoord2f(rays_hit[i] - floor(rays_hit[i]), 0.0f);
@@ -526,6 +607,7 @@ GLuint loadBMP(const char* filename)
 }
 
 void loadTexture(const char* filename) {
+    printforce("filename", filename);
     textureID = loadBMP(filename);
     if (textureID == 0) {
         print_("Error loading texture: ",&filename);
@@ -540,7 +622,7 @@ void displayCallback() {
     drawMap();
     drawPlayer();
     castRays();
-    renderFloorAndSky(skyR, skyB, skyG, floorR, floorG, floorB);
+    renderFloorAndSky(floorR, floorG, floorB, skyR, skyG, skyB);
     render3DWall();
 
     glutSwapBuffers();
