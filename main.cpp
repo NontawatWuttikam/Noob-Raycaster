@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
     glutTimerFunc(0, timer, 0);
     glutKeyboardFunc(keyboard);
 
-    const char* filename = "wood.bmp";
+    const char* filename = "doom_brick.jpg";
     loadTexture(filename);
     init();
     glutMainLoop();
@@ -445,7 +445,25 @@ void castRays() {
     }    
 }
 
-void renderViewport() {
+void renderFloorAndSky(float fr, float fg, float fb, float sr, float sg, float sb) {
+    glLoadIdentity();
+    glBegin(GL_POLYGON);
+    glColor3f(sr, sg, sb);
+    glVertex2f(0, 10);
+    glVertex2f(0, 0);
+    glVertex2f(20, 0);
+    glVertex2f(20, 10);
+    glEnd();
+    glBegin(GL_POLYGON);
+    glColor3f(fr, fg, fb);
+    glVertex2f(0, 0);
+    glVertex2f(0, -10);
+    glVertex2f(20, -10);
+    glVertex2f(20, 0);
+    glEnd();
+}
+
+void render3DWall() {
     glLoadIdentity();
     // iterate over ray lengths buffer and draw a vertical rectangle (line)
     for (int i = 0; i < numRays; i++) {
@@ -460,6 +478,7 @@ void renderViewport() {
         glEnable(GL_TEXTURE_2D);
         glBegin(GL_POLYGON);
         // glColor3f(colorIntensity, colorIntensity, colorIntensity);
+        glColor3f(1.0f, 1.0f, 1.0f);
         // std::cout << j+offsetX << " " << -1*i+offsetY << "\n";
         glVertex2f(xStep, voidGap + offsetY);
         glTexCoord2f(rays_hit[i] - floor(rays_hit[i]), 0.0f);
@@ -474,7 +493,7 @@ void renderViewport() {
         glDisable(GL_TEXTURE_2D);
 
     }
-    print_("\n");
+    // print_("\n");
 }
 
 GLuint loadBMP(const char* filename)
@@ -514,7 +533,8 @@ void displayCallback() {
     drawMap();
     drawPlayer();
     castRays();
-    renderViewport();
+    renderFloorAndSky(150/255.0f, 135/255.0f, 56/255.0f, 135/255.0f, 206/255.0f, 235/255.0f);
+    render3DWall();
     // reset model view matrix (rotation scale)
 
     glutSwapBuffers();
