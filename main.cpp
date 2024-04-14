@@ -57,6 +57,11 @@ void printforce(T firstArg, Args... args) {
         std::cout << std::endl; // End the line
 }
 
+bool DoesFileExist (const std::string& name) {
+    std::ifstream f(name.c_str());
+    return f.good();
+}
+
 using namespace std;
 void displayCallback();
 void reshape(int, int);
@@ -73,7 +78,19 @@ void init() {
 }
 
 int main(int argc, char** argv) {
-    std::ifstream file("example_config\\woodMaze.txt");
+    if (argc == 1) {
+        printforce("please provide a config txt file path in example_config directory");
+        return 1;
+    }
+
+    char* configPath = argv[1];
+    std::string cfgPath(configPath);
+    
+    if (!DoesFileExist(cfgPath)) {
+        printforce("config file doesn't exist");
+        return 1;
+    }
+    std::ifstream file(configPath);
     parseWorldParameters(file);
     parseOtherParameters(file);
     glutInit(&argc, argv);
@@ -157,8 +174,8 @@ void parseWorldParameters(ifstream& file) {
                         if (line[i] == 'P') {
                             worldMap[countRow][countCol] = 0; 
                             playerX = countCol + offsetX + 0.5f;
-                            playerY = -1*(countRow+offsetY) + 0.5f;
-
+                            playerY = -1*(countRow+offsetY) - 0.5f;
+                            printforce("setting player to", countCol, countRow);
                         }
                         countCol++;
                     }

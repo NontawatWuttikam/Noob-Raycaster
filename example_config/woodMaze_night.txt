@@ -21,12 +21,12 @@
 1,1,1,1,1,0,1,0,0,0,0,0,0,1,1,1,1,1,1,1
 
 [OtherParameters]
-skyR 135
-skyG 206
-skyB 235
-floorR 118
-floorG 94
-floorB 54
+skyR 20
+skyG 20
+skyB 20
+floorR 68
+floorG 49
+floorB 4
 wallHeight 18.0f
-distanceFallOff 0.28f
+distanceFallOff 0.89f
 texture textures/wood.bmp
