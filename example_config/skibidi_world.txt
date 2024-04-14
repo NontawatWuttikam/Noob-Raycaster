@@ -27,6 +27,6 @@ skyB 10
 floorR 30
 floorG 30
 floorB 30
-wallHeight 18.0f
+wallHeight 20.0f
 distanceFallOff 0.28f
 texture textures/skibidi2.png

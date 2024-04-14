@@ -210,6 +210,7 @@ void parseOtherParameters(ifstream& file) {
                 if (tokens[0] == "floorR") floorR = std::stof(tokens[1])/255.0f; 
                 if (tokens[0] == "floorG") floorG = std::stof(tokens[1])/255.0f; 
                 if (tokens[0] == "floorB") floorB = std::stof(tokens[1])/255.0f; 
+                if (tokens[0] == "wallHeight") wallHeight = std::stof(tokens[1]);
                 if (tokens[0] == "distanceFallOff") distanceFallOff = std::stof(tokens[1]);
                 if (tokens[0] == "texture") {
                     textureFilename = tokens[1];
