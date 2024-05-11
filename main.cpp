@@ -72,6 +72,7 @@ void loadTexture(const char*);
 void castRays();
 void parseWorldParameters(ifstream&);
 void parseOtherParameters(ifstream&);  
+float* findEndOfRay(float , float , float , float);
 
 void init() {
     glClearColor(0.0, 0.0, 0.0, 1.0);
@@ -226,19 +227,28 @@ void keyboard(unsigned char key, int x, int y) {
     isPress = true;
     float deltaY = 0.0f;
     float deltaX = 0.0f;
+    float newPlayerPosX = playerX;
+    float newPlayerPosY = playerY;
+    
+    float pX = playerX - offsetX;
+    float pY = worldSize - (playerY - offsetY);
+
     switch(key) {
-        case 'w':
-            deltaY= walkSize;
+        case 'w': {
+            printforce("playerAngle",playerAngle);
+            float* newPlayerPos = findEndOfRay(pX, pY, walkSize, playerAngle);
+            newPlayerPosX = newPlayerPos[0] + offsetX;
+            newPlayerPosY = worldSize + offsetY - newPlayerPos[1];
+            // deltaY= walkSize;
             break;
-        case 'a':
-            deltaX= -walkSize;
+        }
+        case 's': {
+            float* newPlayerPos = findEndOfRay(pX, pY, -walkSize, playerAngle);
+            newPlayerPosX = newPlayerPos[0] + offsetX;
+            newPlayerPosY = worldSize + offsetY - newPlayerPos[1];
+            // deltaY= walkSize;
             break;
-        case 's':
-            deltaY= -walkSize;
-            break;
-        case 'd':
-            deltaX= walkSize;
-            break;
+        }
         case 'j': //steering CCW
             if (playerAngle + 1.f >= 360.0f) {
                 playerAngle = playerAngle - 360.f;
@@ -263,7 +273,7 @@ void keyboard(unsigned char key, int x, int y) {
                 float minY = -1*(i+offsetY) - 1;
                 float maxY = (-1*(i+offsetY)) ;
                 // player + delta is in some wall block: so we dont walk
-                if ((playerX+deltaX > minX && playerX+deltaX < maxX) && (playerY+deltaY > minY && playerY+deltaY < maxY)) {
+                if ((newPlayerPosX > minX && newPlayerPosX < maxX) && (newPlayerPosY > minY && newPlayerPosY < maxY)) {
                     // cout << playerX << " " << playerY << "\n";
                     // cout << "stuck: " << minX << " " << minY << " " << maxX << " " << maxY << " " << "\n";
                     return;
@@ -271,8 +281,8 @@ void keyboard(unsigned char key, int x, int y) {
             }
          }
     cout << playerX << " " << playerY << " " << playerAngle << "\n";
-    playerX += deltaX;
-    playerY += deltaY;
+    playerX = newPlayerPosX;
+    playerY = newPlayerPosY;
 }
 
 void drawGrid() {
